@@ -27,3 +27,6 @@ model Prediction {
 
   @@map("predictions")
 }
+
+
+
