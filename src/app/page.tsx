@@ -1,4 +1,4 @@
-import logo from "@/assets/SageLogo1.png";
+import logo from "@/assets/supercooltreemoon.png";
 import { Button } from "@/components/ui/button";
 import { auth } from "@clerk/nextjs";
 import Image from "next/image";

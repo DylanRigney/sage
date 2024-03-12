@@ -14,7 +14,7 @@ export async function POST(req: Request) {
     }
 
     const {
-      title,
+      name,
       category,
       description,
       checkPrediction,
@@ -30,7 +30,7 @@ export async function POST(req: Request) {
 
     const prediction = await prisma.prediction.create({
       data: {
-        title,
+        name,
         category,
         description,
         userId,
@@ -40,7 +40,7 @@ export async function POST(req: Request) {
       },
     });
 
-    return Response.json({prediction}, {status: 201});
+    return Response.json({ prediction }, { status: 201 });
   } catch (error) {
     console.log(error);
     return Response.json({ error: "Internal Server Error" }, { status: 500 });

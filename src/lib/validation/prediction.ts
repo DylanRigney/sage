@@ -1,11 +1,11 @@
 import { z } from "zod";
 
 export const createPredictionSchema = z.object({
-  title: z.string().min(1, { message: "Please enter a title" }),
-  category: z.string().min(1, { message: "Please select a category" }),
+  name: z.string().min(1, { message: "Please enter a prediction name" }),
+  category: z.string().min(1, { message: "Please select a prediction category" }),
   description: z.string().optional(),
   checkPrediction: z.date().optional(),
-  possibleOutcomes: z.array(z.string().min(1, { message: "Please enter possible outcomes" })),
+  possibleOutcomes: z.string().optional(),
   userPrediction: z.string().min(1, { message: "Please make a prediction" }),
 });
 
