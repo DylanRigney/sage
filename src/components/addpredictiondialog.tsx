@@ -70,7 +70,7 @@ export default function AddPredictionDialog({
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Add Prediction</DialogTitle>
+          <DialogTitle className="text-center">Add Prediction</DialogTitle>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
