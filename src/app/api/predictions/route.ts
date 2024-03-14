@@ -1,6 +1,7 @@
 import prisma from "@/lib/db/prisma";
 import {
   createPredictionSchema,
+  deletePredictionSchema,
   resolvePredictionSchema,
   updatePredictionSchema,
 } from "@/lib/validation/prediction";
@@ -72,7 +73,7 @@ export async function PUT(req: Request) {
       userPrediction,
     } = parseResult.data;
 
-    const prediction = await prisma.prediction.findUnique({where: {id}});
+    const prediction = await prisma.prediction.findUnique({ where: { id } });
 
     if (!prediction) {
       return Response.json({ error: "Prediction not found" }, { status: 404 });
@@ -92,9 +93,9 @@ export async function PUT(req: Request) {
         description,
         checkPrediction,
         possibleOutcomes,
-        userPrediction, 
-      }
-    })
+        userPrediction,
+      },
+    });
 
     return Response.json({ prediction: updatedPrediction }, { status: 200 });
   } catch (error) {
@@ -114,13 +115,9 @@ export async function PATCH(req: Request) {
       return Response.json({ error: "Invalid input" }, { status: 400 });
     }
 
-    const {
-      id,
-      isAccurate,
-      resultNotes,
-    } = parseResult.data;
+    const { id, isAccurate, resultNotes } = parseResult.data;
 
-    const prediction = await prisma.prediction.findUnique({where: {id}}); 
+    const prediction = await prisma.prediction.findUnique({ where: { id } });
 
     if (!prediction) {
       return Response.json({ error: "Prediction not found" }, { status: 404 });
@@ -137,15 +134,50 @@ export async function PATCH(req: Request) {
       data: {
         isAccurate,
         resultNotes,
-      }
-    })
+      },
+    });
 
     return Response.json({ prediction: resolvedPrediction }, { status: 200 });
   } catch (error) {
-     console.log(error);
-     return Response.json({ error: "Internal Server Error" }, { status: 500 });
-  }  
-  
+    console.log(error);
+    return Response.json({ error: "Internal Server Error" }, { status: 500 });
+  }
+}
+
+export async function DELETE(req: Request) {
+  try {
+    const body = await req.json();
+
+    const parseResult = deletePredictionSchema.safeParse(body);
+
+    if (!parseResult.success) {
+      console.error(parseResult.error);
+      return Response.json({ error: "Invalid input" }, { status: 400 });
+    }
+
+    const { id } = parseResult.data;
+
+    const prediction = await prisma.prediction.findUnique({ where: { id } });
+
+    if (!prediction) {
+      return Response.json({ error: "Prediction not found" }, { status: 404 });
+    }
+
+    const { userId } = auth();
+
+    if (!userId || userId !== prediction.userId) {
+      return Response.json({ error: "Not authorized" }, { status: 401 });
+    }
+
+    await prisma.prediction.delete({
+      where: { id },
+    });
+
+    return Response.json({message: "Prediction deleted successfully"},{ status: 200 });
+  } catch (error) {
+    console.log(error);
+    return Response.json({ error: "Internal Server Error" }, { status: 500 });
+  }
 }
 
 // import { experimental_AssistantResponse } from "ai";

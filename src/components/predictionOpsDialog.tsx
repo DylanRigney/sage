@@ -24,15 +24,15 @@ import { Textarea } from "./ui/textarea";
 import LoadingButton from "./ui/loading-button";
 import { useRouter } from "next/navigation";
 
-type AddNoteDialogProps = {
+type PredictionOpsDialogProps = {
   open: boolean;
   setOpen: (open: boolean) => void;
 };
 
-export default function AddPredictionDialog({
+export default function PredictionOpsDialog({
   open,
   setOpen,
-}: AddNoteDialogProps) {
+}: PredictionOpsDialogProps) {
   const router = useRouter();
 
   const form = useForm<CreatePredictionSchema>({
@@ -41,7 +41,7 @@ export default function AddPredictionDialog({
       name: "",
       category: "",
       description: "",
-      // 
+      //
       // checkPrediction: new Date(),
       possibleOutcomes: "",
       userPrediction: "",

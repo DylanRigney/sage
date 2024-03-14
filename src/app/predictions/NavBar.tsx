@@ -6,10 +6,10 @@ import { UserButton } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { useState } from "react";
-import AddPredictionDialog from "@/components/addpredictiondialog";
+import PredictionOpsDialog from "@/components/predictionopsdialog";
 
 export default function NavBar() {
-  const [showAddPredictionDialog, setShowAddPredictionDialog] = useState(false);
+  const [showPredictionOpsDialog, setShowPredictionOpsDialog] = useState(false);
 
   return (
     <>
@@ -20,7 +20,7 @@ export default function NavBar() {
             <span className="font-bold">Sage</span>
           </Link>
           <div className="flex items-center gap-2">
-            <Button onClick={() => setShowAddPredictionDialog(true)}>
+            <Button onClick={() => setShowPredictionOpsDialog(true)}>
               <Plus size={20} className="mr-2" />
               Create Prediction
             </Button>
@@ -36,7 +36,10 @@ export default function NavBar() {
           </div>
         </div>
       </div>
-      <AddPredictionDialog open={showAddPredictionDialog} setOpen={setShowAddPredictionDialog}></AddPredictionDialog>
+      <PredictionOpsDialog
+        open={showPredictionOpsDialog}
+        setOpen={setShowPredictionOpsDialog}
+      ></PredictionOpsDialog>
     </>
   );
 }
