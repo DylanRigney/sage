@@ -1,5 +1,9 @@
 import prisma from "@/lib/db/prisma";
-import { createPredictionSchema } from "@/lib/validation/prediction";
+import {
+  createPredictionSchema,
+  resolvePredictionSchema,
+  updatePredictionSchema,
+} from "@/lib/validation/prediction";
 import { auth } from "@clerk/nextjs";
 
 export async function POST(req: Request) {
@@ -45,6 +49,103 @@ export async function POST(req: Request) {
     console.log(error);
     return Response.json({ error: "Internal Server Error" }, { status: 500 });
   }
+}
+
+export async function PUT(req: Request) {
+  try {
+    const body = await req.json();
+
+    const parseResult = updatePredictionSchema.safeParse(body);
+
+    if (!parseResult.success) {
+      console.error(parseResult.error);
+      return Response.json({ error: "Invalid input" }, { status: 400 });
+    }
+
+    const {
+      id,
+      name,
+      category,
+      description,
+      checkPrediction,
+      possibleOutcomes,
+      userPrediction,
+    } = parseResult.data;
+
+    const prediction = await prisma.prediction.findUnique({where: {id}});
+
+    if (!prediction) {
+      return Response.json({ error: "Prediction not found" }, { status: 404 });
+    }
+
+    const { userId } = auth();
+
+    if (!userId || userId !== prediction.userId) {
+      return Response.json({ error: "Not authorized" }, { status: 401 });
+    }
+
+    const updatedPrediction = await prisma.prediction.update({
+      where: { id },
+      data: {
+        name,
+        category,
+        description,
+        checkPrediction,
+        possibleOutcomes,
+        userPrediction, 
+      }
+    })
+
+    return Response.json({ prediction: updatedPrediction }, { status: 200 });
+  } catch (error) {
+    console.log(error);
+    return Response.json({ error: "Internal Server Error" }, { status: 500 });
+  }
+}
+
+export async function PATCH(req: Request) {
+  try {
+    const body = await req.json();
+
+    const parseResult = resolvePredictionSchema.safeParse(body);
+
+    if (!parseResult.success) {
+      console.error(parseResult.error);
+      return Response.json({ error: "Invalid input" }, { status: 400 });
+    }
+
+    const {
+      id,
+      isAccurate,
+      resultNotes,
+    } = parseResult.data;
+
+    const prediction = await prisma.prediction.findUnique({where: {id}}); 
+
+    if (!prediction) {
+      return Response.json({ error: "Prediction not found" }, { status: 404 });
+    }
+
+    const { userId } = auth();
+
+    if (!userId || userId !== prediction.userId) {
+      return Response.json({ error: "Not authorized" }, { status: 401 });
+    }
+
+    const resolvedPrediction = await prisma.prediction.update({
+      where: { id },
+      data: {
+        isAccurate,
+        resultNotes,
+      }
+    })
+
+    return Response.json({ prediction: resolvedPrediction }, { status: 200 });
+  } catch (error) {
+     console.log(error);
+     return Response.json({ error: "Internal Server Error" }, { status: 500 });
+  }  
+  
 }
 
 // import { experimental_AssistantResponse } from "ai";

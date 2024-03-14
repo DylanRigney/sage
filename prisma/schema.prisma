@@ -22,10 +22,11 @@ model Prediction {
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
   checkPrediction  DateTime?
-  possibleOutcomes String? 
+  possibleOutcomes String?
   userPrediction   String
   correctAnswer    String?
   isAccurate       Boolean?
+  resultNotes      String?
 
   @@map("predictions")
 }
