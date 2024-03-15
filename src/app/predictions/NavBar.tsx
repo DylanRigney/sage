@@ -6,7 +6,8 @@ import { UserButton } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { useState } from "react";
-import PredictionOpsDialog from "@/components/predictionopsdialog";
+import PredictionOpsDialog from "@/components/predictionOpsDialog";
+
 
 export default function NavBar() {
   const [showPredictionOpsDialog, setShowPredictionOpsDialog] = useState(false);
