@@ -7,9 +7,14 @@ import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { useState } from "react";
 import PredictionOpsDialog from "@/components/predictionOpsDialog";
+import ThemeToggleButton from "@/components/ThemeToggleButton";
+import {dark} from "@clerk/themes";
+import { useTheme } from "next-themes";
 
 
 export default function NavBar() {
+  const {theme} = useTheme();
+
   const [showPredictionOpsDialog, setShowPredictionOpsDialog] = useState(false);
 
   return (
@@ -26,9 +31,12 @@ export default function NavBar() {
               Create Prediction
             </Button>
             <div className="mx-3 h-12 border-l border-solid border-gray-300" />
+            <ThemeToggleButton />
+            {/* <div className="mx-3 h-12 border-l border-solid border-gray-300" /> */}
             <UserButton
               afterSignOutUrl="/"
               appearance={{
+                baseTheme: theme === "dark" ? dark : undefined,
                 elements: {
                   avatarBox: { width: "2.75rem", height: "2.75rem" },
                 },
