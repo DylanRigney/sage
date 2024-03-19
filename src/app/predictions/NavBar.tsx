@@ -10,6 +10,7 @@ import PredictionOpsDialog from "@/components/predictionOpsDialog";
 import ThemeToggleButton from "@/components/ThemeToggleButton";
 import {dark} from "@clerk/themes";
 import { useTheme } from "next-themes";
+import AIChatButton from "@/components/AIChatButton";
 
 
 export default function NavBar() {
@@ -26,6 +27,7 @@ export default function NavBar() {
             <span className="font-bold">Sage</span>
           </Link>
           <div className="flex items-center gap-2">
+            <AIChatButton />
             <Button onClick={() => setShowPredictionOpsDialog(true)}>
               <Plus size={20} className="mr-2" />
               Create Prediction

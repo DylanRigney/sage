@@ -148,7 +148,7 @@ export default function PredictionOpsDialog({
                   <FormLabel>Description</FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder="What is being predicted? (optional)"
+                      placeholder="What is being predicted?"
                       {...field}
                     />
                   </FormControl>
