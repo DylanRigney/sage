@@ -1,4 +1,6 @@
+import { predictionsIndex } from "@/lib/db/pinecone";
 import prisma from "@/lib/db/prisma";
+import { getEmbedding } from "@/lib/openai";
 import {
   createPredictionSchema,
   deletePredictionSchema,
@@ -25,6 +27,7 @@ export async function POST(req: Request) {
       checkPrediction,
       possibleOutcomes,
       userPrediction,
+      notes,
     } = parseResult.data;
 
     const { userId } = auth();
@@ -33,16 +36,40 @@ export async function POST(req: Request) {
       return Response.json({ error: "Not authorized" }, { status: 401 });
     }
 
-    const prediction = await prisma.prediction.create({
-      data: {
-        name,
-        category,
-        description,
-        userId,
-        checkPrediction,
-        possibleOutcomes,
-        userPrediction,
-      },
+    const embedding = await getEmbeddingForPrediction(
+      name,
+      category,
+      description,
+      possibleOutcomes,
+      userPrediction,
+      notes,
+    );
+
+    const prediction = await prisma.$transaction(async (tx) => {
+      const prediction = await tx.prediction.create({
+        data: {
+          name,
+          category,
+          description,
+          userId,
+          checkPrediction,
+          possibleOutcomes,
+          userPrediction,
+          notes: notes,
+        },
+      });
+
+      await predictionsIndex.upsert([
+        {
+          id: prediction.id,
+          values: embedding,
+          metadata: {
+            userId: userId,
+          },
+        },
+      ]);
+
+      return prediction;
     });
 
     return Response.json({ prediction }, { status: 201 });
@@ -71,6 +98,7 @@ export async function PUT(req: Request) {
       checkPrediction,
       possibleOutcomes,
       userPrediction,
+      notes,
     } = parseResult.data;
 
     const prediction = await prisma.prediction.findUnique({ where: { id } });
@@ -85,16 +113,40 @@ export async function PUT(req: Request) {
       return Response.json({ error: "Not authorized" }, { status: 401 });
     }
 
-    const updatedPrediction = await prisma.prediction.update({
-      where: { id },
-      data: {
-        name,
-        category,
-        description,
-        checkPrediction,
-        possibleOutcomes,
-        userPrediction,
-      },
+    const embedding = await getEmbeddingForPrediction(
+      name,
+      category,
+      description,
+      possibleOutcomes,
+      userPrediction,
+      notes,
+    )
+
+    const updatedPrediction = await prisma.$transaction(async (tx) => {
+      const updatedPrediction = await tx.prediction.update({
+        where: { id },
+        data: {
+          name,
+          category,
+          description,
+          checkPrediction,
+          possibleOutcomes,
+          userPrediction,
+          notes,
+        },
+      });
+
+      await predictionsIndex.upsert([
+        {
+          id: id,
+          values: embedding,
+          metadata: {
+            userId
+          }, 
+        }
+      ])
+      
+      return updatedPrediction;
     });
 
     return Response.json({ prediction: updatedPrediction }, { status: 200 });
@@ -115,7 +167,18 @@ export async function PATCH(req: Request) {
       return Response.json({ error: "Invalid input" }, { status: 400 });
     }
 
-    const { id, isAccurate, resultNotes } = parseResult.data;
+    const {
+      id,
+      name,
+      category,
+      description,
+      checkPrediction,
+      possibleOutcomes,
+      userPrediction,
+      notes,
+      outcome,
+      isAccurate,
+    } = parseResult.data;
 
     const prediction = await prisma.prediction.findUnique({ where: { id } });
 
@@ -129,13 +192,39 @@ export async function PATCH(req: Request) {
       return Response.json({ error: "Not authorized" }, { status: 401 });
     }
 
-    const resolvedPrediction = await prisma.prediction.update({
-      where: { id },
-      data: {
-        isAccurate,
-        resultNotes,
-      },
-    });
+    const embedding = await getEmbeddingForPrediction(
+      name,
+      category,
+      description,
+      possibleOutcomes,
+      userPrediction,
+      notes,
+      outcome,
+      isAccurate,
+    );
+
+    const resolvedPrediction = await prisma.$transaction(async (tx) => {
+      const resolvedPrediction = await tx.prediction.update({
+        where: { id },
+        data: {
+          outcome,
+          isAccurate,
+          notes,
+        },
+      });
+
+      await predictionsIndex.upsert([
+        {
+          id: id,
+          values: embedding,
+          metadata: {
+            userId
+          },
+        }
+      ])
+
+      return resolvedPrediction;
+    })
 
     return Response.json({ prediction: resolvedPrediction }, { status: 200 });
   } catch (error) {
@@ -168,49 +257,51 @@ export async function DELETE(req: Request) {
     if (!userId || userId !== prediction.userId) {
       return Response.json({ error: "Not authorized" }, { status: 401 });
     }
+    
+    await prisma.$transaction(async (tx) => {
+      await tx.prediction.delete({
+        where: { id },
+      });
 
-    await prisma.prediction.delete({
-      where: { id },
-    });
+      await predictionsIndex.deleteOne(id);
+    })
 
-    return Response.json({message: "Prediction deleted successfully"},{ status: 200 });
+    return Response.json(
+      { message: "Prediction deleted successfully" },
+      { status: 200 },
+    );
   } catch (error) {
     console.log(error);
     return Response.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
 
-// import { experimental_AssistantResponse } from "ai";
-// import OpenAI from "openai";
-// import { MessageContentText } from "openai/resources/beta/threads/messages/messages";
-// import { threadId } from "worker_threads";
-
-// const openai = new OpenAI({
-//   apiKey: process.env.OPENAI_API_KEY || "",
-// });
-
-// export const runtime = "edge";
-
-// export async function POST(req: Request) {
-
-//   const input: {
-//     threadId: string | null;
-//     message: string;
-//   } = await req.json();
-
-//   // Create a thread if needed
-//   const threadId = input.threadId ?? (await openai.beta.threads.create({})).id;
-
-//   // Add a message to the thread
-//   const createdMessage = await openai.beta.threads.messages.create(threadId, {
-//     role: "user",
-//     content: input.message,
-//   });
-
-//   return experimental_AssistantResponse(
-//     { threadId, messageId: createdMessage.id },
-//     async ({ threadId, sendMessage }) => {
-//       // Run the assistant on the thread
-//     },
-//   );
-// }
+async function getEmbeddingForPrediction(
+  name: string,
+  category: string,
+  description: string,
+  possibleOutcomes: string | undefined,
+  userPrediction: string,
+  notes: string | undefined,
+  outcome?: string | undefined,
+  isAccurate?: boolean | undefined,
+) {
+  return getEmbedding(
+    "User Prediction \n\nPrediction name: " +
+      name +
+      "\n\nCategory: " +
+      category +
+      "\n\nDescription: " +
+      description +
+      "\n\nPossible outcomes: " +
+      (possibleOutcomes ?? "No possible outcomes provided") +
+      "\n\nUser Prediction: " +
+      userPrediction +
+      "\n\nOutcome: " +
+      (outcome ?? "The prediction has not been resolved yet") +
+      "\n\nPrediction result: " +
+      (isAccurate ?? "The prediction has not been resolved yet") +
+      "\n\nNotes: " +
+      (notes ?? "No notes provided"),
+  );
+}

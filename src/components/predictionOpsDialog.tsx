@@ -23,46 +23,86 @@ import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
 import LoadingButton from "./ui/loading-button";
 import { useRouter } from "next/navigation";
+import { Prediction } from "@prisma/client";
+import { useState } from "react";
 
 type PredictionOpsDialogProps = {
   open: boolean;
   setOpen: (open: boolean) => void;
+  predictionToEdit?: Prediction;
 };
 
 export default function PredictionOpsDialog({
   open,
   setOpen,
+  predictionToEdit,
 }: PredictionOpsDialogProps) {
+  const [deleteInProgress, setDeleteInProgress] = useState(false);
+
   const router = useRouter();
 
   const form = useForm<CreatePredictionSchema>({
     resolver: zodResolver(createPredictionSchema),
     defaultValues: {
-      name: "",
-      category: "",
-      description: "",
-      //
+      name: predictionToEdit?.name ?? "",
+      category: predictionToEdit?.category ?? "",
+      description: predictionToEdit?.description ?? "",
+      // Add date once you add reminder feature
       // checkPrediction: new Date(),
-      possibleOutcomes: "",
-      userPrediction: "",
+      possibleOutcomes: predictionToEdit?.possibleOutcomes ?? "",
+      userPrediction: predictionToEdit?.userPrediction ?? "",
     },
   });
 
   async function onSubmit(input: CreatePredictionSchema) {
     try {
-      const response = await fetch("/api/predictions", {
-        method: "POST",
-        body: JSON.stringify(input),
-      });
+      if (predictionToEdit) {
+        const response = await fetch("/api/predictions", {
+          method: "PUT",
+          body: JSON.stringify({ id: predictionToEdit.id, ...input }),
+        });
+        if (!response.ok) {
+          throw new Error("Status Code: " + response.status);
+        }
+      } else {
+        const response = await fetch("/api/predictions", {
+          method: "POST",
+          body: JSON.stringify(input),
+        });
 
-      if (!response.ok) {
-        throw new Error("Status Code: " + response.statusText);
+        if (!response.ok) {
+          throw new Error("Status Code: " + response.status);
+        }
+        form.reset();
       }
-      form.reset();
       router.refresh();
       setOpen(false);
     } catch (error) {
-      alert(error);
+      console.log(error);
+      alert("Something went wrong. Please try again.");
+    }
+  }
+
+  async function deletePrediction() {
+    if (!predictionToEdit) {
+      return;
+    }
+    setDeleteInProgress(true);
+    try {
+      const response = await fetch("api/predictions", {
+        method: "DELETE",
+        body: JSON.stringify({ id: predictionToEdit.id }),
+      });
+      if (!response.ok) {
+        throw new Error("Status Code: " + response.status);
+      }
+      router.refresh();
+      setOpen(false);
+    } catch (error) {
+      console.log(error);
+      alert("Something went wrong. Please try again.");
+    } finally {
+      setDeleteInProgress(false);
     }
   }
 
@@ -70,7 +110,7 @@ export default function PredictionOpsDialog({
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle className="text-center">Add Prediction</DialogTitle>
+          <DialogTitle className="text-center">{predictionToEdit ? "Edit Prediction" : "Create Prediction"}</DialogTitle>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
@@ -108,7 +148,7 @@ export default function PredictionOpsDialog({
                   <FormLabel>Description</FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder="What is being predicted? (optional)"
+                      placeholder="What is being predicted?"
                       {...field}
                     />
                   </FormControl>
@@ -148,10 +188,22 @@ export default function PredictionOpsDialog({
                 </FormItem>
               )}
             />
-            <DialogFooter>
+            <DialogFooter className="gap-1 sm:gap-0">
+              {predictionToEdit && (
+                <LoadingButton
+                  variant="destructive"
+                  type="button"
+                  loading={deleteInProgress}
+                  disabled={form.formState.isSubmitting}
+                  onClick={deletePrediction}
+                >
+                  Delete
+                </LoadingButton>
+              )}
               <LoadingButton
                 type="submit"
                 loading={form.formState.isSubmitting}
+                disabled={deleteInProgress}
               >
                 Submit
               </LoadingButton>

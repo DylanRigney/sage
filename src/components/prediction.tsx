@@ -1,12 +1,17 @@
+"use client";
+
 import { Prediction as PredictionModel } from "@prisma/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
-import { Heading, Heading1 } from "lucide-react";
+import { useState } from "react";
+import PredictionOpsDialog from "./predictionOpsDialog";
 
 type PredictionProps = {
   prediction: PredictionModel;
 };
 
 export default function Prediction({ prediction }: PredictionProps) {
+const[showEdit, setShowEdit] = useState(false);
+
   const wasUpdated = prediction.updatedAt > prediction.createdAt;
 
   const createdUpdatedAtTimestamp = (
@@ -14,7 +19,8 @@ export default function Prediction({ prediction }: PredictionProps) {
   ).toDateString();
 
   return (
-    <Card>
+    <>
+    <Card className="cursor-pointer transition-shadow hover:shadow-lg " onClick={() => setShowEdit(true)}>
       <CardHeader>
         <CardTitle className="border-b pb-2 text-center">
           {prediction.name}
@@ -34,5 +40,7 @@ export default function Prediction({ prediction }: PredictionProps) {
         </p>
       </CardContent>
     </Card>
+    <PredictionOpsDialog open={showEdit} setOpen={setShowEdit} predictionToEdit={prediction} />
+    </>
   );
 }

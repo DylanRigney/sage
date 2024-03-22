@@ -6,9 +6,16 @@ import { UserButton } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { useState } from "react";
-import PredictionOpsDialog from "@/components/predictionopsdialog";
+import PredictionOpsDialog from "@/components/predictionOpsDialog";
+import ThemeToggleButton from "@/components/ThemeToggleButton";
+import {dark} from "@clerk/themes";
+import { useTheme } from "next-themes";
+import AIChatButton from "@/components/AIChatButton";
+
 
 export default function NavBar() {
+  const {theme} = useTheme();
+
   const [showPredictionOpsDialog, setShowPredictionOpsDialog] = useState(false);
 
   return (
@@ -20,14 +27,18 @@ export default function NavBar() {
             <span className="font-bold">Sage</span>
           </Link>
           <div className="flex items-center gap-2">
+            <AIChatButton />
             <Button onClick={() => setShowPredictionOpsDialog(true)}>
               <Plus size={20} className="mr-2" />
               Create Prediction
             </Button>
             <div className="mx-3 h-12 border-l border-solid border-gray-300" />
+            <ThemeToggleButton />
+            {/* <div className="mx-3 h-12 border-l border-solid border-gray-300" /> */}
             <UserButton
               afterSignOutUrl="/"
               appearance={{
+                baseTheme: theme === "dark" ? dark : undefined,
                 elements: {
                   avatarBox: { width: "2.75rem", height: "2.75rem" },
                 },

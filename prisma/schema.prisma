@@ -17,16 +17,16 @@ model Prediction {
   id               String    @id @default(auto()) @map("_id") @db.ObjectId
   name             String
   category         String
-  description      String?
+  description      String
   userId           String
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
   checkPrediction  DateTime?
   possibleOutcomes String?
   userPrediction   String
-  correctAnswer    String?
+  outcome          String?
   isAccurate       Boolean?
-  resultNotes      String?
+  notes            String?
 
   @@map("predictions")
 }
